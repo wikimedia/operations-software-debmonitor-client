@@ -1,0 +1,7 @@
+[release]
+skip_changelog = true
+
+[debian]
+distros = buster,bullseye,bookworm
+source_package = debmonitor-client
+binary_package = debmonitor-client

@@ -1,0 +1,13 @@
+Source: debmonitor-client
+Section: admin
+Priority: optional
+Maintainer: Riccardo Coccioli <rcoccioli@wikimedia.org>
+Uploaders: Moritz Muehlenhoff <moritz@wikimedia.org>
+Build-Depends: debhelper, dh-exec, dh-python, python3-all, python3-pytest-runner, python3-wheel
+Standards-Version: 4.1.1
+
+Package: debmonitor-client
+Architecture: all
+Depends: ${misc:Depends}, ${python3:Depends}, python3-apt, python3-requests
+Description: DebMonitor package update tracking (client)
+ This is the client package of DebMonitor.

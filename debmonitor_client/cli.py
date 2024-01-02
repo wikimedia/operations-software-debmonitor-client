@@ -73,11 +73,19 @@ from json.decoder import JSONDecodeError
 import apt
 import requests
 
+from pkg_resources import DistributionNotFound, get_distribution
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 
-# The client version is based on the server's major.minor version plus a dedicated client-specific incremental number.
-__version__ = '0.3client3'
+
+try:  # TODO: use importlib.metadata once Python 3.7 support is dropped
+    __version__ = get_distribution('debmonitor-client').version
+    """:py:class:`str`: the version of the current debmonitor-client module."""
+except DistributionNotFound:  # pragma: no cover - this happens only if the package is not installed
+    # Support the use case of the Debian building system where tests are run without installation
+    if 'SETUPTOOLS_SCM_PRETEND_VERSION' in os.environ:
+        __version__ = os.environ['SETUPTOOLS_SCM_PRETEND_VERSION']
+
 
 SUPPORTED_API_VERSIONS = ('v1',)
 CLIENT_VERSION_HEADER = 'X-Debmonitor-Client-Version'

@@ -1,5 +1,5 @@
-[release]
-skip_changelog = true
+[github]
+repository = operations-software-debmonitor-client
 
 [debian]
 distros = buster,bullseye,bookworm

@@ -23,7 +23,8 @@ extras_require = {
 }
 
 setup_requires = [
-    'pytest-runner',
+    'pytest-runner>=4.2',
+    'setuptools_scm>=3.2.0',
 ]
 
 setup(
@@ -51,6 +52,7 @@ setup(
     name='debmonitor-client',
     packages=find_packages(exclude=['tests']),
     platforms=['GNU/Linux', ],
+    python_requires='>=3.7',
     extras_require=extras_require,
     setup_requires=setup_requires,
     url='https://gerrit.wikimedia.org/g/operations/software/debmonitor-client',

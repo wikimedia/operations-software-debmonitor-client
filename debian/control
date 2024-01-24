@@ -3,11 +3,24 @@ Section: admin
 Priority: optional
 Maintainer: Riccardo Coccioli <rcoccioli@wikimedia.org>
 Uploaders: Moritz Muehlenhoff <moritz@wikimedia.org>
-Build-Depends: debhelper, dh-exec, dh-python, python3-all, python3-pytest-runner, python3-wheel
-Standards-Version: 4.1.1
+Standards-Version: 4.6.2
+Build-Depends:
+  debhelper-compat (= 12),
+  dh-exec,
+  dh-python,
+  python3-all (>= 3.7),
+  python3-apt,
+  python3-pytest,
+  python3-pytest-cov,
+  python3-requests,
+  python3-requests-mock,
+  python3-setuptools,
+  python3-setuptools-scm
+Homepage: https://github.com/wikimedia/operations-software-debmonitor-client
+Rules-Requires-Root: no
 
 Package: debmonitor-client
 Architecture: all
-Depends: ${misc:Depends}, ${python3:Depends}, python3-apt, python3-requests
-Description: DebMonitor package update tracking (client)
- This is the client package of DebMonitor.
+Depends: ${python3:Depends}, ${misc:Depends}, apt
+Description: DebMonitor client - Debian packages tracker
+ This is the client part of DebMonitor, a Debian packages tracker.

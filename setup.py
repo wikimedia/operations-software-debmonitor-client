@@ -23,7 +23,6 @@ extras_require = {
 }
 
 setup_requires = [
-    'pytest-runner>=4.2',
     'setuptools_scm>=3.2.0',
 ]
 

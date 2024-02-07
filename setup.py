@@ -7,13 +7,14 @@ with open('README.rst', 'r') as readme:
     long_description = readme.read()
 
 # Required dependencies
-install_requires = [
-    'apt',
-    'requests'
+INSTALL_REQUIRES = [
+    # 'apt',  # Not present by choice on pypi.org, it must be installed via debian package
+    'requests',
+    'setuptools',
 ]
 
 # Extra dependencies
-extras_require = {
+EXTRAS_REQUIRE = {
     'tests': [  # Test dependencies
         'flake8>=3.5.0',
         'pytest>=3.5.0',
@@ -22,7 +23,7 @@ extras_require = {
     ],
 }
 
-setup_requires = [
+SETUP_REQUIRES = [
     'setuptools_scm>=3.2.0',
 ]
 
@@ -46,14 +47,15 @@ setup(
     ],
     description='Client for Debmonitor, a Debian package tracker',
     keywords=['debmonitor', 'apt', 'deb'],
+    install_requires=INSTALL_REQUIRES,
     license='GPLv3+',
     long_description=long_description,
     name='debmonitor-client',
     packages=find_packages(exclude=['tests']),
     platforms=['GNU/Linux', ],
     python_requires='>=3.7',
-    extras_require=extras_require,
-    setup_requires=setup_requires,
+    extras_require=EXTRAS_REQUIRE,
+    setup_requires=SETUP_REQUIRES,
     url='https://gerrit.wikimedia.org/g/operations/software/debmonitor-client',
     use_scm_version=True,
     zip_safe=False,

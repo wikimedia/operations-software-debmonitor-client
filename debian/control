@@ -21,6 +21,6 @@ Rules-Requires-Root: no
 
 Package: debmonitor-client
 Architecture: all
-Depends: ${python3:Depends}, ${misc:Depends}, apt
+Depends: ${python3:Depends}, ${misc:Depends}, apt, python3-apt
 Description: DebMonitor client - Debian packages tracker
  This is the client part of DebMonitor, a Debian packages tracker.

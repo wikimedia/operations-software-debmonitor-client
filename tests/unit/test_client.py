@@ -12,6 +12,7 @@ import requests_mock
 
 
 OS_NAME = 'ExampleOS'
+OS_VERSION = '001'
 KERNEL_RELEASE = '1.0.0'
 KERNEL_VERSION = '{os} v1.0.0-1'.format(os=OS_NAME)
 HOSTNAME = 'host1.example.com'
@@ -507,28 +508,28 @@ def test_self_update_has_update_ok(mocked_requests):
     assert mocked_requests.called
 
 
-def test_get_distro_name():
-    """Calling get_distro_name() should return the OS name."""
+def test_get_distro_version():
+    """Calling get_distro_version() should return the OS name and version."""
     with mock.patch('builtins.open', mock.mock_open(read_data=OS_RELEASE),
                     create=True) as mocked_open:
-        os = cli.get_distro_name()
-        assert os == OS_NAME
+        os = cli.get_distro_version()
+        assert os == f"{OS_NAME} {OS_VERSION}"
         assert mock.call(cli.OS_RELEASE_FILE, mode='r') in mocked_open.mock_calls
 
 
-def test_get_distro_name_empty():
-    """Calling get_distro_name() with an empty file should return the 'unknown'."""
+def test_get_distro_version_empty():
+    """Calling get_distro_version() with an empty file should return the 'unknown'."""
     with mock.patch('builtins.open', mock.mock_open(), create=True) as mocked_open:
-        os = cli.get_distro_name()
+        os = cli.get_distro_version()
         assert os == 'unknown'
         assert mock.call(cli.OS_RELEASE_FILE, mode='r') in mocked_open.mock_calls
 
 
-def test_get_distro_name_fail():
-    """Calling get_distro_name() with an unreadable file, should return 'unknown'."""
+def test_get_distro_version_fail():
+    """Calling get_distro_version() with an unreadable file, should return 'unknown'."""
     with mock.patch('builtins.open', mock.mock_open(), create=True) as mocked_open:
         mocked_open.side_effect = IOError
-        os = cli.get_distro_name()
+        os = cli.get_distro_version()
         assert os == 'unknown'
         assert mock.call(cli.OS_RELEASE_FILE, mode='r') in mocked_open.mock_calls
 
@@ -751,7 +752,7 @@ def _get_payload_with_packages(params):
 
     payload = {
         'api_version': 'v1',
-        'os': OS_NAME,
+        'os': f"{OS_NAME} {OS_VERSION}",
         'installed': installed,
         'uninstalled': [],
         'upgradable': upgradable,

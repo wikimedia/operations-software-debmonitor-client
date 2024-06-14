@@ -370,20 +370,27 @@ def self_update(base_url, cert, verify, http):
     logger.info('Successfully self-updated DebMonitor CLI to version %s', version)
 
 
-def get_distro_name():
-    """Return the Linux distribution name, uppercase first character."""
-    os = 'unknown'
+def get_distro_version():
+    """Return the Linux distribution name, uppercase first character,
+    followed by a number indicating its codename id.
+    """
+    unknown_version = 'unknown'
+    os = None
+    version = None
     try:
         with open(OS_RELEASE_FILE, mode='r') as os_file:
             for line in os_file.readlines():
                 if line.startswith('ID='):
                     osname = line.split('=', 1)[1].strip()
                     os = osname[0].upper() + osname[1:]
-                    break
+                if line.startswith('VERSION_ID='):
+                    version = line.split('"')[1].strip()
     except (IOError, IndexError):
         pass  # Explicitely ignored exception, os is already set to unknown.
 
-    return os
+    if os is None or version is None:
+        return unknown_version
+    return f"{os} {version}"
 
 
 def parse_args(argv):
@@ -520,7 +527,7 @@ def generate_payload(args, input_lines=None):
 
     payload = {
         'api_version': args.api,
-        'os': get_distro_name(),
+        'os': get_distro_version(),
         'installed': packages['installed'],
         'uninstalled': packages['uninstalled'],
         'upgradable': packages['upgradable'],

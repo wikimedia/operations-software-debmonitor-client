@@ -1,6 +1,25 @@
 Debmonitor Client Changelog
 ---------------------------
 
+`v0.4.0`_ (2024-06-24)
+^^^^^^^^^^^^^^^^^^^^^^
+
+CLI breaking changes
+""""""""""""""""""""
+* The OS/Distribution name reported by the CLI is more granular from now on,
+  since it contains the Distribution name (like Debian) and its version-id
+  number. Check the new features section for more info.
+
+New features
+""""""""""""
+
+* cli: modify get_distro_name to return the version id.
+  Debmonitor is now being used to track hosts and Docker images,
+  and having more granularity in the reported OS distribution
+  name is surely beneficial to ease security reviews.
+  The OS name is now going to be reported with its version id
+  (as reported in /etc/os-release).
+
 `v0.3.5`_ (2024-02-07)
 ^^^^^^^^^^^^^^^^^^^^^^
 
@@ -35,3 +54,4 @@ Miscellanea
 .. _`v0.3.3`: https://github.com/wikimedia/operations-software-debmonitor-client/releases/tag/v0.3.3
 .. _`v0.3.4`: https://github.com/wikimedia/operations-software-debmonitor-client/releases/tag/v0.3.4
 .. _`v0.3.5`: https://github.com/wikimedia/operations-software-debmonitor-client/releases/tag/v0.3.5
+.. _`v0.4.0`: https://github.com/wikimedia/operations-software-debmonitor-client/releases/tag/v0.4.0

@@ -1,3 +1,9 @@
+debmonitor-client (0.4.0-2) unstable; urgency=medium
+
+  * Also use adduser on Bullseye to create the system user T372472
+
+ -- Moritz Mühlenhoff <mmuhlenhoff@wikimedia.org>  Fri, 06 Sep 2024 12:16:35 +0200
+
 debmonitor-client (0.4.0-1) unstable; urgency=medium
 
   * v0.4.0 upstream release.

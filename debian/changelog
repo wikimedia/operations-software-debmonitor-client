@@ -1,3 +1,10 @@
+debmonitor-client (0.4.0-3) unstable; urgency=medium
+
+  [Antoine Musso]
+  * Do not use a login shell when dropping privileges T216832
+
+ -- Moritz Mühlenhoff <mmuhlenhoff@wikimedia.org>  Fri, 20 Sep 2024 14:00:07 +0200
+
 debmonitor-client (0.4.0-2) unstable; urgency=medium
 
   * Also use adduser on Bullseye to create the system user T372472

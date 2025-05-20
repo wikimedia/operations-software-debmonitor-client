@@ -1,3 +1,6 @@
+[release]
+skip_sphinx = true
+
 [github]
 repository = operations-software-debmonitor-client
 

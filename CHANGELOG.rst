@@ -1,6 +1,14 @@
 Debmonitor Client Changelog
 ---------------------------
 
+`v0.4.1`_ (2025-05-22)
+^^^^^^^^^^^^^^^^^^^^^^
+
+Minor improvements
+""""""""""""""""""
+
+*  Add support for Debian trixie and Python versions up to 3.13.
+
 `v0.4.0`_ (2024-06-24)
 ^^^^^^^^^^^^^^^^^^^^^^
 
@@ -55,3 +63,4 @@ Miscellanea
 .. _`v0.3.4`: https://github.com/wikimedia/operations-software-debmonitor-client/releases/tag/v0.3.4
 .. _`v0.3.5`: https://github.com/wikimedia/operations-software-debmonitor-client/releases/tag/v0.3.5
 .. _`v0.4.0`: https://github.com/wikimedia/operations-software-debmonitor-client/releases/tag/v0.4.0
+.. _`v0.4.1`: https://github.com/wikimedia/operations-software-debmonitor-client/releases/tag/v0.4.1

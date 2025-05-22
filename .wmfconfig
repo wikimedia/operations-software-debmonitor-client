@@ -1,7 +1,10 @@
+[release]
+skip_sphinx = true
+
 [github]
 repository = operations-software-debmonitor-client
 
 [debian]
-distros = buster,bullseye,bookworm
+distros = buster,bullseye,bookworm,trixie
 source_package = debmonitor-client
 binary_package = debmonitor-client

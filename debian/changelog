@@ -1,3 +1,9 @@
+debmonitor-client (0.4.1-1) unstable; urgency=medium
+
+  * v0.4.1 upstream release.
+
+ -- Riccardo Coccioli <rcoccioli@wikimedia.org>  Thu, 22 May 2025 08:46:29 -0000
+
 debmonitor-client (0.4.0-3) unstable; urgency=medium
 
   [Antoine Musso]

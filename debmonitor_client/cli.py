@@ -23,16 +23,14 @@ DebMonitor CLI - Debian packages tracker CLI.
 Automatically collect the current status of all installed and upgradable packages and report it to a DebMonitor server.
 It can report all installed and upgradable packages, just the upgradable ones, or the changes reported by a Dpkg hook.
 
-This script was tested with Python 3.5, 3.6, 3.7, 3.8 & 3.9
+This script was tested with Python 3.7, 3.9, 3.11, 3.13
 
 * Install the following Debian packages dependencies
 
   * python3-apt
   * python3-requests
 
-* Deploy this standalone CLI script across the fleet, for example into ``/usr/local/bin/debmonitor``, and make it
-  executable, optionally modifying the shebang to force a specific Python version. The script can also be downloaded
-  directly from a DebMonitor server via its ``/client`` endpoint.
+* Install the ``debmonitor-client`` Debian package across the fleet. It will take care of installing the CLI.
 * Optionally add a configuration file in ``/etc/debmonitor.conf`` (or in a different one passing the
   ``--config /path/to/config`` CLI argument) to avoid to pass the common options to the CLI. See the example file in
   ``doc/examples/client.conf``.
@@ -50,15 +48,12 @@ This script was tested with Python 3.5, 3.6, 3.7, 3.8 & 3.9
 
 * Set a daily or weekly crontab that executes DebMonitor to send the list of all installed and upgradable packages
   (do not set the ``-g`` or ``-u`` options). It is used as a reconciliation method if any of the hook would fail.
-  It is also required to run DebMonitor in full mode at least once to track all the packages. Optionally set the
-  ``--update`` option so that the script will automatically check for available updates and will overwrite itself with
-  the latest version available on the DebMonitor server.
+  It is also required to run DebMonitor in full mode at least once to track all the packages.
 
 """
 from __future__ import print_function
 
 import argparse
-import hashlib
 import json
 import logging
 import os
@@ -88,8 +83,6 @@ except DistributionNotFound:  # pragma: no cover - this happens only if the pack
 
 
 SUPPORTED_API_VERSIONS = ('v1',)
-CLIENT_VERSION_HEADER = 'X-Debmonitor-Client-Version'
-CLIENT_CHECKSUM_HEADER = 'X-Debmonitor-Client-Checksum'
 OS_RELEASE_FILE = '/etc/os-release'
 REQUEST_TIMEOUT = (3.05, 30)  # (connect, read) see https://docs.python-requests.org/en/master/user/advanced/#timeouts
 logger = logging.getLogger('debmonitor')
@@ -323,53 +316,6 @@ def get_http_adapter(tries: int, backoff: int):
     return http
 
 
-def self_update(base_url, cert, verify, http):
-    """Check if the DebMonitor server has a different version of this script and automatically self-overwrite it.
-
-    Arguments:
-        base_url (str): the base URL of the DebMonitor server.
-        cert (str, tuple, None): a client certificate as required by the requests library.
-        verify (bool, str): to be passed to requests calls for server side certificate validation. Either a boolean or
-            a string with the path to a CA bundle.
-        http (request.Session): A requests session object used to make http requests
-
-    Raises:
-        requests.exceptions.RequestException: on error to check the version and get the new script.
-        EnvironmentError: if unable to overwrite itself.
-        RuntimeError: if no remote version is found or there is a checksum mismatch or a wrong HTTP status code.
-    """
-    client_url = '{base_url}/client'.format(base_url=base_url)
-    response = http.head(client_url, cert=cert, verify=verify, timeout=REQUEST_TIMEOUT)
-    if response.status_code != requests.status_codes.codes.ok:
-        raise RuntimeError('Unable to check remote script version, got HTTP {retcode}, expected 200 OK.'.format(
-            retcode=response.status_code))
-
-    version = response.headers.get(CLIENT_VERSION_HEADER)
-    if version is None:
-        raise RuntimeError('No header {header} value found, unable to check remote version of the script.'.format(
-            header=CLIENT_VERSION_HEADER))
-
-    if version == __version__:
-        logger.debug('The current script version is the correct one, no update needed.')
-        return
-
-    logger.info('Found new remote version %s, current version is %s. Updating.', version, __version__)
-    response = http.get(client_url, cert=cert, verify=verify, timeout=REQUEST_TIMEOUT)
-    if response.status_code != requests.status_codes.codes.ok:
-        raise RuntimeError('Unable to download remote script, got HTTP {retcode}, expected 200 OK.'.format(
-            retcode=response.status_code))
-
-    checksum = hashlib.sha256(response.content).hexdigest()
-    if response.headers.get(CLIENT_CHECKSUM_HEADER) != checksum:
-        raise RuntimeError('The checksum of the script do not match the HTTP header: {checksum} != {header}'.format(
-            checksum=checksum, header=response.headers.get(CLIENT_CHECKSUM_HEADER)))
-
-    with open(os.path.realpath(__file__), mode='w') as script_file:
-        script_file.write(response.text)
-
-    logger.info('Successfully self-updated DebMonitor CLI to version %s', version)
-
-
 def get_distro_version():
     """Return the Linux distribution name, uppercase first character,
     followed by a number indicating its codename id.
@@ -449,9 +395,7 @@ def parse_args(argv):
     parser.add_argument('-k', '--key',
                         help=('Path to the client SSH private key to use for sending the update. If not specified, '
                               'the private key is expected to be found in the certificate defined by -c/--cert.'))
-    parser.add_argument('--ca',
-                        help=('Path to a CA bundle to use to verify the DebMonitor server certificate. Mandatory when '
-                              '--update is set.'))
+    parser.add_argument('--ca', help='Path to a CA bundle to use to verify the DebMonitor server certificate.')
     parser.add_argument('-a', '--api', help='Version of the API to use. [default: v1]', default='v1',
                         choices=SUPPORTED_API_VERSIONS)
     parser.add_argument('-u', '--upgradable', action='store_true',
@@ -463,9 +407,6 @@ def parse_args(argv):
                         help='Do not send the report to a DebMonitor server, rather print the package data to stdout '
                              'in JSON format. This can be useful to generate container information in a build '
                              'environment which does not have direct access to a DebMonitor server.')
-    parser.add_argument('--update', action='store_true',
-                        help=('Self-update DebMonitor CLI script if there is a new version available on the '
-                              'DebMonitor server. The script will execute with the current version.'))
     parser.add_argument('--retries', type=int, default=3, help="number of retries to use for network requests")
     parser.add_argument('--retry-backoff', type=int, default=60, help="number of seconds to wait between retries")
     parser.add_argument('-d', '--debug', action="store_true", help='Set logging level to DEBUG')
@@ -482,9 +423,6 @@ def parse_args(argv):
 
     if args.upgradable and args.dpkg_hook:
         parser.error('argument -u/--upgradable and -g/--dpkg-hook are mutually exclusive')
-
-    if args.update and args.ca is None:
-        parser.error('argument --ca is required when --update is set')
 
     args.verify = True
     if args.ca is not None:
@@ -583,12 +521,6 @@ def run(args, input_lines=None):
         raise RuntimeError('Failed to send the update to the DebMonitor server: {status} {body}'.format(
             status=response.status_code, body=response.text))
     logger.info('Successfully sent the %s update to the DebMonitor server', payload['update_type'])
-
-    if args.update:
-        try:
-            self_update(base_url, cert, args.verify, http)
-        except Exception as e:
-            logger.error('Unable to self-update this script: %s', e)
 
 
 def main(args, input_lines=None):

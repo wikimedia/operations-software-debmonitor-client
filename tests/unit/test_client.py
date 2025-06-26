@@ -18,18 +18,6 @@ KERNEL_VERSION = '{os} v1.0.0-1'.format(os=OS_NAME)
 HOSTNAME = 'host1.example.com'
 IMAGEBASENAME = 'registry.example.com/component/image-name:'
 IMAGENAME = '{base}1.2.3-1'.format(base=IMAGEBASENAME)
-CLIENT_VERSION = '0.1-client0'
-CLIENT_BODY_DUMMY_1 = """import os
-__version__ = '0.1-client0'
-"""
-CLIENT_CHECKSUM_DUMMY_1 = '8e726df11735f74b9f795f94ff79a39c422207bca1f51cdd21b2f0e91c50b2cc'
-CLIENT_BODY_DUMMY_2 = """import os
-__dummy__ = 1
-__version__ = '0.1-client0'
-"""
-CLIENT_CHECKSUM_DUMMY_2 = '46844273c0dda349676c321b1c2f20c540f5cf4f1f97dce85bc03852f30f6c10'
-CLIENT_BODY_NO_VERSION = 'import os'
-CLIENT_CHECKSUM_NO_VERSION = 'de2abade832c8e350a1bdc98cfcdb1e202ac4749c5fc51a4a970d41736b6df5c'
 
 mocked_apt = mock.MagicMock()
 mocked_apt.cache.Filter = object
@@ -75,7 +63,6 @@ DEBMONITOR_SERVER = 'debmonitor.example.com'
 DEBMONITOR_BASE_URL = 'https://{server}:443'.format(server=DEBMONITOR_SERVER)
 DEBMONITOR_HOST_UPDATE_URL = '{base_url}/hosts/{name}/update'.format(base_url=DEBMONITOR_BASE_URL, name=HOSTNAME)
 DEBMONITOR_IMAGE_UPDATE_URL = '{base_url}/images/{name}/update'.format(base_url=DEBMONITOR_BASE_URL, name=IMAGENAME)
-DEBMONITOR_CLIENT_URL = '{base_url}/client'.format(base_url=DEBMONITOR_BASE_URL)
 DEBMONITOR_CLIENT_CONFIG = 'tests/fixtures/client.{mode}.conf'
 DEBMONITOR_CLIENT_CONFIG_OK = DEBMONITOR_CLIENT_CONFIG.format(mode='ok')
 DEBMONITOR_CLIENT_CA_BUNDLE = 'tests/fixtures/ca_bundle.crt'
@@ -186,7 +173,7 @@ def test_parse_args_ok():
     """Calling parse_args with correct parameters should return the parsed arguments."""
     server = 'localhost'
     args = cli.parse_args(['-s', server])
-    assert args.server == server
+    assert args.server == [server]
 
 
 def test_parse_args_missing_server(capsys):
@@ -232,7 +219,7 @@ def test_parse_args_config():
     """Calling parse_args with --config should initialize the values from the configuration file."""
     args = cli.parse_args(['--config', DEBMONITOR_CLIENT_CONFIG_OK])
     assert args.config == DEBMONITOR_CLIENT_CONFIG_OK
-    assert args.server == DEBMONITOR_SERVER
+    assert args.server == [DEBMONITOR_SERVER]
     assert args.port == 443
     assert args.cert == 'CERT_PATH'
     assert args.key == 'KEY_PATH'
@@ -269,21 +256,6 @@ def test_parse_args_no_ca(capsys):
     args = cli.parse_args(['-n'])
     assert args.ca is None
     assert args.verify is True
-
-
-def test_parse_args_update_ca(capsys):
-    """Calling parse_args with --update and --ca should set verify to the ca path."""
-    args = cli.parse_args(['-n', '--update', '--ca', DEBMONITOR_CLIENT_CA_BUNDLE])
-    assert args.ca == DEBMONITOR_CLIENT_CA_BUNDLE
-    assert args.verify == DEBMONITOR_CLIENT_CA_BUNDLE
-
-
-def test_parse_args_update_no_ca(capsys):
-    """Calling parse_args with --update but without --ca should raise an error."""
-    with pytest.raises(SystemExit):
-        cli.parse_args(['-n', '--update'])
-    _, err = capsys.readouterr()
-    assert 'argument --ca is required when --update is set' in err
 
 
 def test_parse_args_image_file_no_file(capsys):
@@ -432,80 +404,6 @@ def test_parse_dpkg_hook(version, apt_line):
         expected_packages['installed'].append(package)
 
     assert packages == expected_packages
-
-
-def test_self_update_head_fail(mocked_requests):
-    """Calling self_update() when the HEAD request to DebMonitor fail should raise RuntimeError."""
-    mocked_requests.register_uri('HEAD', DEBMONITOR_CLIENT_URL, status_code=500)
-    with pytest.raises(RuntimeError, match='Unable to check remote script version'):
-        cli.self_update(DEBMONITOR_BASE_URL, None, True, cli.get_http_adapter(1, 1))
-
-    assert mocked_requests.called
-
-
-def test_self_update_head_no_header(mocked_requests):
-    """Calling self_update() when the HEAD request is missing the expected header should raise RuntimeError."""
-    mocked_requests.register_uri('HEAD', DEBMONITOR_CLIENT_URL, status_code=200)
-    with pytest.raises(RuntimeError, match='No header {header} value found'.format(header=cli.CLIENT_VERSION_HEADER)):
-        cli.self_update(DEBMONITOR_BASE_URL, None, True, cli.get_http_adapter(1, 1))
-
-    assert mocked_requests.called
-
-
-def test_self_update_head_same_version(mocked_requests):
-    """Calling self_update() when client on DebMonitor is at the same version should return without doing anything."""
-    mocked_requests.register_uri(
-        'HEAD', DEBMONITOR_CLIENT_URL, status_code=200, headers={cli.CLIENT_VERSION_HEADER: cli.__version__})
-
-    ret = cli.self_update(DEBMONITOR_BASE_URL, None, True, cli.get_http_adapter(1, 1))
-
-    assert ret is None
-    assert mocked_requests.called
-
-
-def test_self_update_has_update_fail(mocked_requests):
-    """Calling self_update() when the GET request to DebMonitor fail should raise RuntimeError."""
-    mocked_requests.register_uri(
-        'HEAD', DEBMONITOR_CLIENT_URL, status_code=200, headers={cli.CLIENT_VERSION_HEADER: CLIENT_VERSION})
-    mocked_requests.register_uri('GET', DEBMONITOR_CLIENT_URL, status_code=500)
-
-    with pytest.raises(RuntimeError, match='Unable to download remote script'):
-        cli.self_update(DEBMONITOR_BASE_URL, None, True, cli.get_http_adapter(1, 1))
-
-    assert mocked_requests.called
-
-
-def test_self_update_has_update_wrong_hash(mocked_requests):
-    """Calling self_update() when the checksum mismatch should raise RuntimeError."""
-    mocked_requests.register_uri(
-        'HEAD', DEBMONITOR_CLIENT_URL, status_code=200, headers={cli.CLIENT_VERSION_HEADER: CLIENT_VERSION})
-    mocked_requests.register_uri('GET', DEBMONITOR_CLIENT_URL, status_code=200, text=CLIENT_BODY_DUMMY_1,
-                                 headers={cli.CLIENT_VERSION_HEADER: CLIENT_VERSION,
-                                          cli.CLIENT_CHECKSUM_HEADER: 'invalid'})
-
-    with pytest.raises(RuntimeError, match='The checksum of the script do not match the HTTP header'):
-        cli.self_update(DEBMONITOR_BASE_URL, None, True, cli.get_http_adapter(1, 1))
-
-    assert mocked_requests.called
-
-
-def test_self_update_has_update_ok(mocked_requests):
-    """Calling self_update() should self-update the CLI script."""
-    mocked_requests.register_uri(
-        'HEAD', DEBMONITOR_CLIENT_URL, status_code=200, headers={cli.CLIENT_VERSION_HEADER: CLIENT_VERSION})
-    mocked_requests.register_uri(
-        'GET', DEBMONITOR_CLIENT_URL, status_code=200, text=CLIENT_BODY_DUMMY_1, headers={
-            cli.CLIENT_VERSION_HEADER: CLIENT_VERSION,
-            cli.CLIENT_CHECKSUM_HEADER: CLIENT_CHECKSUM_DUMMY_1})
-
-    with mock.patch('builtins.open', mock.mock_open(), create=True) as mocked_open:
-        cli.self_update(DEBMONITOR_BASE_URL, None, True, cli.get_http_adapter(1, 1))
-
-        mocked_open.assert_called_once_with(os.path.realpath(cli.__file__), mode='w')
-        mocked_handler = mocked_open()
-        mocked_handler.write.assert_called_once_with(CLIENT_BODY_DUMMY_1)
-
-    assert mocked_requests.called
 
 
 def test_get_distro_version():
@@ -684,51 +582,6 @@ def test_main_dpkg_hook(mocked_getfqdn, mocked_requests):
     assert mocked_requests.called
     assert exit_code == 0
     assert mocked_requests.last_request.json() == _get_payload_with_packages(['-g'])
-
-
-def test_main_update_fail(mocked_getfqdn, mocked_requests, caplog):
-    """Calling main() whit --update that fails the update should log the error and continue."""
-    args = cli.parse_args(['--config', DEBMONITOR_CLIENT_CONFIG_OK, '--update'])
-    mocked_requests.register_uri('POST', DEBMONITOR_HOST_UPDATE_URL, status_code=201)
-    mocked_requests.register_uri('HEAD', DEBMONITOR_CLIENT_URL, status_code=500)
-    _reset_apt_caches()
-
-    with mock.patch('builtins.open', mock.mock_open(read_data=OS_RELEASE),
-                    create=True) as mocked_open:
-        exit_code = cli.main(args)
-        assert mock.call(cli.OS_RELEASE_FILE, mode='r') in mocked_open.mock_calls
-
-    assert mocked_requests.called
-    mocked_getfqdn.assert_called_once_with()
-    assert exit_code == 0
-    assert 'Unable to self-update this script' in caplog.text
-
-
-def test_main_update_ok(mocked_getfqdn, mocked_requests, caplog):
-    """Calling main() with --update that succeed should update the CLI script."""
-    caplog.set_level(logging.INFO)
-    args = cli.parse_args(['--config', DEBMONITOR_CLIENT_CONFIG_OK, '--update'])
-    mocked_requests.register_uri('POST', DEBMONITOR_HOST_UPDATE_URL, status_code=201)
-    mocked_requests.register_uri(
-        'HEAD', DEBMONITOR_CLIENT_URL, status_code=200, headers={cli.CLIENT_VERSION_HEADER: CLIENT_VERSION})
-    mocked_requests.register_uri(
-        'GET', DEBMONITOR_CLIENT_URL, status_code=200, text=CLIENT_BODY_DUMMY_1, headers={
-            cli.CLIENT_VERSION_HEADER: CLIENT_VERSION,
-            cli.CLIENT_CHECKSUM_HEADER: CLIENT_CHECKSUM_DUMMY_1})
-    _reset_apt_caches()
-
-    with mock.patch('builtins.open', mock.mock_open(read_data=OS_RELEASE),
-                    create=True) as mocked_open:
-        exit_code = cli.main(args)
-        assert mock.call(cli.OS_RELEASE_FILE, mode='r') in mocked_open.mock_calls
-        assert mock.call(os.path.realpath(cli.__file__), mode='w') in mocked_open.mock_calls
-        mocked_handler = mocked_open()
-        mocked_handler.write.assert_called_once_with(CLIENT_BODY_DUMMY_1)
-
-    assert mocked_requests.called
-    mocked_getfqdn.assert_called_once_with()
-    assert exit_code == 0
-    assert 'Successfully self-updated DebMonitor CLI' in caplog.text
 
 
 def _get_payload_with_packages(params):

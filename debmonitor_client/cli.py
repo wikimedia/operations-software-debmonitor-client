@@ -381,9 +381,10 @@ def parse_args(argv):
     parser = argparse.ArgumentParser(
         prog='debmonitor-client', description='DebMonitor CLI - Debian packages tracker CLI', epilog=__doc__,
         parents=[conf_parser], formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('-s', '--server', help='DebMonitor server DNS name, required unless -n/--dry-run is set.')
+    parser.add_argument('-s', '--server', nargs='+',
+                        help='DebMonitor server DNS name, required unless -n/--dry-run is set.')
     parser.add_argument('-p', '--port', default=443, type=int,
-                        help='Port in which the DebMonitor server is listening. [default: 443]')
+                        help='Port in which the DebMonitor server is listening (applies to all servers) [default: 443]')
     parser.add_argument('-i', '--image-name',
                         help='Instead of submitting host entries, record the package state of a container image. '
                              'This parameter specifies the image name and enables the image mode.')
@@ -417,6 +418,11 @@ def parse_args(argv):
 
     if not args.server and not args.dry_run:
         parser.error('argument -s/--server is required unless -n/--dry-run is set')
+    else:
+        # If read from config file via ConfigParser, we need to convert to a list,
+        # if passed from argparse we get the correct format
+        if isinstance(args.server, str):
+            args.server = args.server.split(',')
 
     if args.key is not None and args.cert is None:
         parser.error('argument -c/--cert is required when -k/--key is set')
@@ -495,19 +501,10 @@ def run(args, input_lines=None):
         RuntimeError, requests.exceptions.RequestException: on error.
 
     """
-    base_url = 'https://{server}:{port}'.format(server=args.server, port=args.port)
-
     payload = generate_payload(args, input_lines)
     if args.dry_run:
         print(json.dumps(payload, sort_keys=True, indent=4))
         return
-
-    if args.image_file is not None:
-        url = '{base_url}/images/{name}/update'.format(base_url=base_url, name=payload['image_name'])
-    elif args.image_name is not None:
-        url = '{base_url}/images/{name}/update'.format(base_url=base_url, name=args.image_name)
-    else:
-        url = '{base_url}/hosts/{host}/update'.format(base_url=base_url, host=payload['hostname'])
 
     cert = None
     if args.key is not None:
@@ -516,11 +513,20 @@ def run(args, input_lines=None):
         cert = args.cert
 
     http = get_http_adapter(args.retries, args.retry_backoff)
-    response = http.post(url, cert=cert, json=payload, verify=args.verify, timeout=REQUEST_TIMEOUT)
-    if response.status_code != requests.status_codes.codes.created:
-        raise RuntimeError('Failed to send the update to the DebMonitor server: {status} {body}'.format(
-            status=response.status_code, body=response.text))
-    logger.info('Successfully sent the %s update to the DebMonitor server', payload['update_type'])
+    for server in args.server:
+        base_url = 'https://{server}:{port}'.format(server=server, port=args.port)
+        if args.image_file is not None:
+            url = '{base_url}/images/{name}/update'.format(base_url=base_url, name=payload['image_name'])
+        elif args.image_name is not None:
+            url = '{base_url}/images/{name}/update'.format(base_url=base_url, name=args.image_name)
+        else:
+            url = '{base_url}/hosts/{host}/update'.format(base_url=base_url, host=payload['hostname'])
+
+        response = http.post(url, cert=cert, json=payload, verify=args.verify, timeout=REQUEST_TIMEOUT)
+        if response.status_code != requests.status_codes.codes.created:
+            raise RuntimeError('Failed to send the update to the DebMonitor server: {status} {body}'.format(
+                status=response.status_code, body=response.text))
+    logger.info('Successfully sent the %s update to the DebMonitor server(s)', payload['update_type'])
 
 
 def main(args, input_lines=None):

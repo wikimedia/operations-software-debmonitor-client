@@ -173,7 +173,7 @@ def test_parse_args_ok():
     """Calling parse_args with correct parameters should return the parsed arguments."""
     server = 'localhost'
     args = cli.parse_args(['-s', server])
-    assert args.server == server
+    assert args.server == [server]
 
 
 def test_parse_args_missing_server(capsys):
@@ -219,7 +219,7 @@ def test_parse_args_config():
     """Calling parse_args with --config should initialize the values from the configuration file."""
     args = cli.parse_args(['--config', DEBMONITOR_CLIENT_CONFIG_OK])
     assert args.config == DEBMONITOR_CLIENT_CONFIG_OK
-    assert args.server == DEBMONITOR_SERVER
+    assert args.server == [DEBMONITOR_SERVER]
     assert args.port == 443
     assert args.cert == 'CERT_PATH'
     assert args.key == 'KEY_PATH'

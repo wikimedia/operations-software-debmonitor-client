@@ -1,6 +1,22 @@
 Debmonitor Client Changelog
 ---------------------------
 
+`v0.5.0`_ (2025-06-26)
+^^^^^^^^^^^^^^^^^^^^^^
+
+CLI breaking changes
+""""""""""""""""""""
+
+* CLI: the --update CLI argument has been removed. The script is not capable of self-updating anymore as the feature
+  was never really used and the canonical way to update it is via its Debian package.
+
+New features
+""""""""""""
+
+* config and CLI arguments: allow to specify multiple servers to send the report to more than one Debmonitor server.
+  For the configuration the servers must be specified as comma-separated. For the CLI the -s/--server argument can be
+  specified multiple times.
+
 `v0.4.1`_ (2025-05-22)
 ^^^^^^^^^^^^^^^^^^^^^^
 
@@ -64,3 +80,4 @@ Miscellanea
 .. _`v0.3.5`: https://github.com/wikimedia/operations-software-debmonitor-client/releases/tag/v0.3.5
 .. _`v0.4.0`: https://github.com/wikimedia/operations-software-debmonitor-client/releases/tag/v0.4.0
 .. _`v0.4.1`: https://github.com/wikimedia/operations-software-debmonitor-client/releases/tag/v0.4.1
+.. _`v0.5.0`: https://github.com/wikimedia/operations-software-debmonitor-client/releases/tag/v0.5.0
